@@ -8,66 +8,46 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>TickTimer 搶票鬧鐘</title>
   <style>
-    :root {
-      --bg-dark: #0f172a;
-      --card-bg: rgba(255, 255, 255, 0.05);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --primary: #3b82f6;
-      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-    }
+    /* 極簡化、極輕量 CSS */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Heiti TC", "微軟正黑體", "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #111;
+      color: #eee;
       text-align: center;
-      padding: 40px 20px;
+      padding: 20px;
       margin: 0;
-      transition: background-color 0.3s, box-shadow 0.3s;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
+      -webkit-user-select: none;
+      user-select: none; /* 防止誤觸選取文字 */
     }
     h1 {
-      font-size: 36px;
-      margin-bottom: 5px;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 900;
-      letter-spacing: 1px;
+      font-size: 28px;
+      margin: 10px 0 5px 0;
+      color: #fff;
     }
     .subtitle {
-      color: var(--text-muted);
+      color: #888;
       font-size: 14px;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      padding: 30px;
-      border-radius: 28px;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      background: #222;
+      padding: 20px;
+      border-radius: 16px;
       width: 100%;
-      max-width: 350px;
-      transition: all 0.3s ease;
+      max-width: 320px;
+      box-sizing: border-box;
     }
     
-    /* 自訂 24 小時制輸入框樣式 */
+    /* 24 小時制輸入框 - 加大按鈕與防呆 */
     .time-input-group {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 20px 0 30px 0;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 20px;
-      padding: 15px 10px;
-      border: 1px solid rgba(0,0,0,0.5);
+      margin: 15px 0 25px 0;
     }
     .time-spinner {
       display: flex;
@@ -75,126 +55,116 @@
       align-items: center;
     }
     .spin-btn {
-      background: transparent;
-      color: var(--text-muted);
+      background: #333;
+      color: #aaa;
       border: none;
-      padding: 8px 0;
-      width: 100%;
-      display: flex;
-      justify-content: center;
+      border-radius: 8px;
+      font-size: 24px;
+      width: 60px;
+      height: 44px; /* 加大觸控面積 */
       cursor: pointer;
-      transition: color 0.2s, transform 0.1s;
+      touch-action: manipulation; /* 防止狂按時螢幕放大 */
+      -webkit-tap-highlight-color: transparent;
     }
     .spin-btn:active {
-      transform: scale(1.2);
-      color: var(--text-main);
-    }
-    .spin-btn:disabled {
-      color: rgba(255,255,255,0.1);
-      cursor: not-allowed;
+      background: #555;
+      color: #fff;
     }
     .time-spinner input {
-      width: 65px;
-      font-size: 38px;
+      width: 60px;
+      font-size: 40px;
       text-align: center;
       border: none;
       background: transparent;
-      color: var(--text-main);
-      font-weight: 800;
-      margin: 5px 0;
+      color: #fff;
+      font-weight: bold;
+      margin: 10px 0;
       padding: 0;
-      -moz-appearance: textfield; /* 隱藏 Firefox 箭頭 */
+      -moz-appearance: textfield;
+      -webkit-user-select: auto;
+      user-select: auto; /* 只有輸入框允許選取打字 */
     }
     .time-spinner input:focus {
       outline: none;
-      color: var(--primary);
+      color: #3b82f6;
     }
-    /* 隱藏 Chrome/Safari/iOS 數字輸入框的上下箭頭 */
     .time-spinner input::-webkit-outer-spin-button,
     .time-spinner input::-webkit-inner-spin-button {
       -webkit-appearance: none;
       margin: 0;
     }
     .time-separator {
-      font-size: 38px;
-      font-weight: 800;
-      margin: 0 2px;
-      color: var(--text-muted);
-      padding-bottom: 2px;
+      font-size: 40px;
+      font-weight: bold;
+      margin: 0 5px;
+      color: #555;
     }
 
     button.action-btn {
-      background: var(--primary-gradient);
+      background: #0066cc;
       color: white;
       border: none;
-      padding: 18px 32px;
+      padding: 16px;
       font-size: 18px;
       font-weight: bold;
-      border-radius: 16px;
+      border-radius: 12px;
       cursor: pointer;
       width: 100%;
-      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
-      transition: transform 0.1s, box-shadow 0.2s;
+      margin-bottom: 10px;
+      touch-action: manipulation;
     }
     button.action-btn:active {
-      transform: scale(0.96);
+      background: #005bb5;
     }
     button.stop-btn {
-      background: var(--danger-gradient);
-      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+      background: #cc0000;
       display: none;
     }
-    
-    /* 子母畫面按鈕專屬樣式 */
+    button.stop-btn:active {
+      background: #a30000;
+    }
     button.pip-btn {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
-      margin-top: 15px;
+      background: #008844;
       display: none;
+    }
+    button.pip-btn:active {
+      background: #006633;
     }
 
     #countdown {
-      font-size: 52px;
-      font-weight: 900;
+      font-size: 56px;
+      font-weight: bold;
       font-variant-numeric: tabular-nums;
-      margin: 20px 0;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      margin: 15px 0;
+      color: #3b82f6;
       display: none;
-      text-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
     }
     .instructions {
       font-size: 13px;
-      color: var(--text-muted);
+      color: #777;
       text-align: left;
-      margin-top: 40px;
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 16px;
-      border: 1px solid var(--card-border);
-      line-height: 1.6;
+      margin-top: 20px;
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 12px;
       width: 100%;
-      max-width: 350px;
+      max-width: 320px;
       box-sizing: border-box;
     }
     .instructions ol {
-      margin-top: 10px;
+      margin-top: 8px;
       padding-left: 20px;
     }
-    /* 警告狀態 (閃爍效果改為紅色發光警報感) */
+    
+    /* 警告狀態 */
     body.alert-mode {
-      background-color: #2a0808;
+      background-color: #330000;
     }
     body.alert-mode .card {
-      border-color: #ef4444;
-      box-shadow: 0 0 50px rgba(239, 68, 68, 0.4);
+      background-color: #440000;
     }
     body.alert-mode #countdown {
-      background: var(--danger-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+      color: #ff3333;
     }
   </style>
 </head>
@@ -204,44 +174,32 @@
   <div class="subtitle">極速搶票專用鬧鐘</div>
   
   <div class="card">
-    <p style="margin-top:0; color:var(--text-muted); font-size: 14px;">設定目標時間 (24小時制)</p>
+    <p style="margin-top:0; color:#888; font-size: 14px;">設定目標時間 (24小時制)</p>
     
     <div class="time-input-group">
       <!-- 時 -->
       <div class="time-spinner">
-        <button type="button" class="spin-btn" onclick="adjustTime('hh', 1)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-        </button>
+        <button type="button" class="spin-btn" onclick="adjustTime('hh', 1)">＋</button>
         <input type="number" id="hh" min="0" max="23" placeholder="00" onblur="formatTime(this)">
-        <button type="button" class="spin-btn" onclick="adjustTime('hh', -1)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
+        <button type="button" class="spin-btn" onclick="adjustTime('hh', -1)">－</button>
       </div>
       
       <div class="time-separator">:</div>
       
       <!-- 分 -->
       <div class="time-spinner">
-        <button type="button" class="spin-btn" onclick="adjustTime('mm', 1)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-        </button>
+        <button type="button" class="spin-btn" onclick="adjustTime('mm', 1)">＋</button>
         <input type="number" id="mm" min="0" max="59" placeholder="00" onblur="formatTime(this)">
-        <button type="button" class="spin-btn" onclick="adjustTime('mm', -1)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
+        <button type="button" class="spin-btn" onclick="adjustTime('mm', -1)">－</button>
       </div>
       
       <div class="time-separator">:</div>
       
       <!-- 秒 -->
       <div class="time-spinner">
-        <button type="button" class="spin-btn" onclick="adjustTime('ss', 1)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-        </button>
+        <button type="button" class="spin-btn" onclick="adjustTime('ss', 1)">＋</button>
         <input type="number" id="ss" min="0" max="59" placeholder="00" onblur="formatTime(this)">
-        <button type="button" class="spin-btn" onclick="adjustTime('ss', -1)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
+        <button type="button" class="spin-btn" onclick="adjustTime('ss', -1)">－</button>
       </div>
     </div>
     
@@ -344,16 +302,35 @@
           // 將 Canvas 轉換為 30fps 的影片串流
           stream = canvas.captureStream(30);
           video.srcObject = stream;
+          
+          // 確保影片元數據載入完成後再播放 (解決 iOS 尚未準備好就彈出的錯誤)
+          await new Promise(resolve => {
+            video.onloadedmetadata = () => resolve();
+            if (video.readyState >= 1) resolve(); // 若已經就緒則直接通過
+          });
           await video.play();
         }
         
-        if (document.pictureInPictureElement) {
-          await document.exitPictureInPicture();
+        // 優先嘗試 iOS Safari 專屬的 WebKit API
+        if (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === "function") {
+          if (video.webkitPresentationMode === "picture-in-picture") {
+            video.webkitSetPresentationMode("inline");
+          } else {
+            video.webkitSetPresentationMode("picture-in-picture");
+          }
+        } 
+        // 接著嘗試標準 Web API (Chrome, PC 版 Safari, Android 等)
+        else if (document.pictureInPictureEnabled || video.requestPictureInPicture) {
+          if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+          } else {
+            await video.requestPictureInPicture();
+          }
         } else {
-          await video.requestPictureInPicture();
+          alert("您的系統或瀏覽器目前不支援子母畫面功能！");
         }
       } catch (error) {
-        alert("您的系統或瀏覽器可能不支援此功能！\n錯誤: " + error.message);
+        alert("系統阻擋了懸浮視窗！\n原因: " + error.message + "\n\n(註: 部分 iOS 版本對於「非真實影片」的懸浮有嚴格安全限制)");
       }
     }
 
