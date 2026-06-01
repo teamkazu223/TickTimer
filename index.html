@@ -9,35 +9,53 @@
   <title>TickTimer 搶票鬧鐘</title>
   <style>
     :root {
-      --bg-color: #f4f4f9;
-      --text-color: #333;
-      --primary: #007AFF;
-      --danger: #FF3B30;
+      --bg-dark: #0f172a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary: #3b82f6;
+      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Heiti TC", "微軟正黑體", "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
       text-align: center;
       padding: 40px 20px;
       margin: 0;
-      transition: background-color 0.3s;
+      transition: background-color 0.3s, box-shadow 0.3s;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
     }
     h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
+      font-size: 36px;
+      margin-bottom: 5px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 30px;
     }
     .card {
-      background: white;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-radius: 28px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       width: 100%;
-      max-width: 400px;
+      max-width: 350px;
+      transition: all 0.3s ease;
     }
     
     /* 自訂 24 小時制輸入框樣式 */
@@ -45,115 +63,226 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 20px 0;
+      margin: 20px 0 30px 0;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 20px;
+      padding: 15px 10px;
+      border: 1px solid rgba(0,0,0,0.5);
     }
-    .time-input-group input {
+    .time-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .spin-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      padding: 8px 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      cursor: pointer;
+      transition: color 0.2s, transform 0.1s;
+    }
+    .spin-btn:active {
+      transform: scale(1.2);
+      color: var(--text-main);
+    }
+    .spin-btn:disabled {
+      color: rgba(255,255,255,0.1);
+      cursor: not-allowed;
+    }
+    .time-spinner input {
       width: 65px;
-      font-size: 32px;
+      font-size: 38px;
       text-align: center;
-      border: 2px solid #ddd;
-      border-radius: 12px;
-      padding: 10px 5px;
-      background-color: #fff;
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      font-weight: 800;
+      margin: 5px 0;
+      padding: 0;
       -moz-appearance: textfield; /* 隱藏 Firefox 箭頭 */
     }
+    .time-spinner input:focus {
+      outline: none;
+      color: var(--primary);
+    }
     /* 隱藏 Chrome/Safari/iOS 數字輸入框的上下箭頭 */
-    .time-input-group input::-webkit-outer-spin-button,
-    .time-input-group input::-webkit-inner-spin-button {
+    .time-spinner input::-webkit-outer-spin-button,
+    .time-spinner input::-webkit-inner-spin-button {
       -webkit-appearance: none;
       margin: 0;
     }
-    .time-input-group span {
-      font-size: 32px;
-      font-weight: bold;
-      margin: 0 8px;
-      color: #666;
+    .time-separator {
+      font-size: 38px;
+      font-weight: 800;
+      margin: 0 2px;
+      color: var(--text-muted);
+      padding-bottom: 2px;
     }
 
-    button {
-      background-color: var(--primary);
+    button.action-btn {
+      background: var(--primary-gradient);
       color: white;
       border: none;
-      padding: 16px 32px;
+      padding: 18px 32px;
       font-size: 18px;
       font-weight: bold;
-      border-radius: 12px;
+      border-radius: 16px;
       cursor: pointer;
       width: 100%;
-      box-shadow: 0 4px 12px rgba(0,122,255,0.3);
-      transition: transform 0.1s, opacity 0.2s;
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+      transition: transform 0.1s, box-shadow 0.2s;
     }
-    button:active {
+    button.action-btn:active {
       transform: scale(0.96);
     }
     button.stop-btn {
-      background-color: var(--danger);
-      box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+      background: var(--danger-gradient);
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+      display: none;
+    }
+    
+    /* 子母畫面按鈕專屬樣式 */
+    button.pip-btn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
       margin-top: 15px;
       display: none;
     }
+
     #countdown {
-      font-size: 48px;
+      font-size: 52px;
       font-weight: 900;
       font-variant-numeric: tabular-nums;
-      margin: 30px 0;
-      color: var(--primary);
+      margin: 20px 0;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       display: none;
+      text-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
     }
     .instructions {
-      font-size: 14px;
-      color: #666;
+      font-size: 13px;
+      color: var(--text-muted);
       text-align: left;
-      margin-top: 30px;
-      background: #f9f9f9;
-      padding: 15px;
-      border-radius: 10px;
+      margin-top: 40px;
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      line-height: 1.6;
+      width: 100%;
+      max-width: 350px;
+      box-sizing: border-box;
     }
-    /* 警告狀態 */
+    .instructions ol {
+      margin-top: 10px;
+      padding-left: 20px;
+    }
+    /* 警告狀態 (閃爍效果改為紅色發光警報感) */
     body.alert-mode {
-      background-color: var(--danger);
-      color: white;
+      background-color: #2a0808;
     }
     body.alert-mode .card {
-      background-color: #fff;
+      border-color: #ef4444;
+      box-shadow: 0 0 50px rgba(239, 68, 68, 0.4);
     }
     body.alert-mode #countdown {
-      color: var(--danger);
+      background: var(--danger-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
     }
   </style>
 </head>
 <body>
 
-  <h1>🎟️ TickTimer 搶票鬧鐘</h1>
+  <h1>TickTimer</h1>
+  <div class="subtitle">極速搶票專用鬧鐘</div>
   
   <div class="card">
-    <p style="margin-top:0; color:#666;">設定目標時間 (24小時制)，時間到將發送手機通知</p>
+    <p style="margin-top:0; color:var(--text-muted); font-size: 14px;">設定目標時間 (24小時制)</p>
     
     <div class="time-input-group">
-      <input type="number" id="hh" min="0" max="23" placeholder="00" onblur="formatTime(this)">
-      <span>:</span>
-      <input type="number" id="mm" min="0" max="59" placeholder="00" onblur="formatTime(this)">
-      <span>:</span>
-      <input type="number" id="ss" min="0" max="59" placeholder="00" onblur="formatTime(this)">
+      <!-- 時 -->
+      <div class="time-spinner">
+        <button type="button" class="spin-btn" onclick="adjustTime('hh', 1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+        <input type="number" id="hh" min="0" max="23" placeholder="00" onblur="formatTime(this)">
+        <button type="button" class="spin-btn" onclick="adjustTime('hh', -1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      
+      <div class="time-separator">:</div>
+      
+      <!-- 分 -->
+      <div class="time-spinner">
+        <button type="button" class="spin-btn" onclick="adjustTime('mm', 1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+        <input type="number" id="mm" min="0" max="59" placeholder="00" onblur="formatTime(this)">
+        <button type="button" class="spin-btn" onclick="adjustTime('mm', -1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      
+      <div class="time-separator">:</div>
+      
+      <!-- 秒 -->
+      <div class="time-spinner">
+        <button type="button" class="spin-btn" onclick="adjustTime('ss', 1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+        <input type="number" id="ss" min="0" max="59" placeholder="00" onblur="formatTime(this)">
+        <button type="button" class="spin-btn" onclick="adjustTime('ss', -1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
     </div>
     
-    <button id="startBtn" onclick="startTimer()">授權通知並開始倒數</button>
-    <button id="stopBtn" class="stop-btn" onclick="stopTimer()">停止倒數</button>
+    <button id="startBtn" class="action-btn" onclick="startTimer()">授權通知並開始倒數</button>
+    <button id="stopBtn" class="action-btn stop-btn" onclick="stopTimer()">停止倒數</button>
+    <button id="pipBtn" class="action-btn pip-btn" onclick="startPiP()">📱 開啟懸浮時鐘 (PiP)</button>
     
     <div id="countdown">00:00.00</div>
+
+    <!-- 隱藏的畫布與影片元素，用來產生子母畫面串流 -->
+    <canvas id="pipCanvas" width="400" height="150" style="display: none;"></canvas>
+    <video id="pipVideo" playsinline muted autoplay style="display: none;"></video>
   </div>
 
   <div class="instructions">
-    <strong>⚠️ iOS 使用前必看步驟：</strong>
+    <strong style="color: var(--text-main);">⚠️ iOS 使用必看步驟：</strong>
     <ol>
-      <li>點擊 Safari 底部的「分享」按鈕 (方形加上箭頭)。</li>
+      <li>點擊 Safari 底部的「分享」按鈕。</li>
       <li>選擇<strong>「加入主畫面」</strong>。</li>
-      <li>從手機主畫面打開這個 App (會有一個新的圖示)。</li>
-      <li>點擊開始時，系統會詢問是否允許發送通知，請務必點選<strong>「允許」</strong>。</li>
+      <li>從主畫面打開這個 App。</li>
+      <li>點擊開始時，系統若詢問是否允許發送通知，請務必點選<strong>「允許」</strong>。</li>
     </ol>
   </div>
 
   <script>
+    // 透過上下按鈕調整時間 (支援循環)
+    function adjustTime(id, delta) {
+      const input = document.getElementById(id);
+      let val = parseInt(input.value);
+      if (isNaN(val)) val = 0;
+      
+      const max = parseInt(input.getAttribute('max'));
+      val += delta;
+      
+      // 當數值小於 0 時跳到最大值，大於最大值時回到 0
+      if (val < 0) val = max;
+      if (val > max) val = 0;
+      
+      input.value = String(val).padStart(2, '0');
+    }
+
     // 格式化輸入框，確保輸入為兩位數且不超出範圍
     function formatTime(input) {
       let val = parseInt(input.value);
@@ -180,6 +309,53 @@
     let timerInterval;
     let targetDate;
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // 子母畫面 (PiP) 相關變數
+    const canvas = document.getElementById('pipCanvas');
+    const ctx = canvas.getContext('2d');
+    const video = document.getElementById('pipVideo');
+    let stream;
+
+    // 將時間畫到隱藏的 Canvas 上
+    function updateCanvas(timeText, isAlert = false) {
+      // 填滿背景色 (平常是深藍，警告時是暗紅)
+      ctx.fillStyle = isAlert ? '#2a0808' : '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 警告時畫紅色邊框
+      if (isAlert) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // 繪製文字
+      ctx.fillStyle = isAlert ? '#ef4444' : '#3b82f6'; // 文字顏色
+      ctx.font = 'bold 70px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(timeText, canvas.width / 2, canvas.height / 2);
+    }
+
+    // 啟動子母畫面 (PiP)
+    async function startPiP() {
+      try {
+        if (!stream) {
+          // 將 Canvas 轉換為 30fps 的影片串流
+          stream = canvas.captureStream(30);
+          video.srcObject = stream;
+          await video.play();
+        }
+        
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await video.requestPictureInPicture();
+        }
+      } catch (error) {
+        alert("您的系統或瀏覽器可能不支援此功能！\n錯誤: " + error.message);
+      }
+    }
 
     // 播放提示音 (使用 Web Audio API 繞過自動播放限制)
     function playBeep(frequency = 880, duration = 0.2) {
@@ -236,11 +412,16 @@
       // 4. 切換 UI
       document.getElementById('startBtn').style.display = 'none';
       document.getElementById('stopBtn').style.display = 'block';
+      document.getElementById('pipBtn').style.display = 'block';
       document.getElementById('countdown').style.display = 'block';
       document.getElementById('hh').disabled = true;
       document.getElementById('mm').disabled = true;
       document.getElementById('ss').disabled = true;
+      document.querySelectorAll('.spin-btn').forEach(btn => btn.disabled = true);
       document.body.classList.remove('alert-mode');
+      
+      // 初始畫布文字
+      updateCanvas("等待中...");
 
       let notified10s = false;
 
@@ -254,6 +435,7 @@
           // 時間到！
           clearInterval(timerInterval);
           document.getElementById('countdown').innerText = "00:00.000";
+          updateCanvas("00:00.000", true); // 更新畫布
           document.body.classList.add('alert-mode');
           playBeep(1200, 1.0); // 長聲高音
           sendNotification("🔥 時間到！", "快點去搶票！！！");
@@ -265,8 +447,14 @@
         const s = Math.floor((diff % (1000 * 60)) / 1000);
         const ms = Math.floor((diff % 1000));
 
-        document.getElementById('countdown').innerText = 
-          `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+        const timeString = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+        document.getElementById('countdown').innerText = timeString;
+        
+        // 是否為警告閃爍狀態 (最後 10 秒且毫秒小於 50 時)
+        const isAlertBlink = (diff <= 10000 && ms < 50);
+        
+        // 更新畫布，讓子母畫面同步顯示
+        updateCanvas(timeString, document.body.classList.contains('alert-mode') || isAlertBlink);
 
         // 倒數 10 秒時的特別提醒
         if (diff <= 10000 && !notified10s) {
@@ -287,10 +475,12 @@
       clearInterval(timerInterval);
       document.getElementById('startBtn').style.display = 'block';
       document.getElementById('stopBtn').style.display = 'none';
+      document.getElementById('pipBtn').style.display = 'none';
       document.getElementById('countdown').style.display = 'none';
       document.getElementById('hh').disabled = false;
       document.getElementById('mm').disabled = false;
       document.getElementById('ss').disabled = false;
+      document.querySelectorAll('.spin-btn').forEach(btn => btn.disabled = false);
       document.body.classList.remove('alert-mode');
     }
   </script>
