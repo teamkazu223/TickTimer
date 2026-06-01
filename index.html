@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <!-- 必須要有這幾行，確保加入主畫面後會像原生 App 一樣全螢幕運作 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>TickTimer 搶票鬧鐘</title>
+  <style>
+    :root {
+      --bg-color: #f4f4f9;
+      --text-color: #333;
+      --primary: #007AFF;
+      --danger: #FF3B30;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Heiti TC", "微軟正黑體", "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      text-align: center;
+      padding: 40px 20px;
+      margin: 0;
+      transition: background-color 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    /* 自訂 24 小時制輸入框樣式 */
+    .time-input-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .time-input-group input {
+      width: 65px;
+      font-size: 32px;
+      text-align: center;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      padding: 10px 5px;
+      background-color: #fff;
+      -moz-appearance: textfield; /* 隱藏 Firefox 箭頭 */
+    }
+    /* 隱藏 Chrome/Safari/iOS 數字輸入框的上下箭頭 */
+    .time-input-group input::-webkit-outer-spin-button,
+    .time-input-group input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .time-input-group span {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 0 8px;
+      color: #666;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    button:active {
+      transform: scale(0.96);
+    }
+    button.stop-btn {
+      background-color: var(--danger);
+      box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+      margin-top: 15px;
+      display: none;
+    }
+    #countdown {
+      font-size: 48px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      margin: 30px 0;
+      color: var(--primary);
+      display: none;
+    }
+    .instructions {
+      font-size: 14px;
+      color: #666;
+      text-align: left;
+      margin-top: 30px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    /* 警告狀態 */
+    body.alert-mode {
+      background-color: var(--danger);
+      color: white;
+    }
+    body.alert-mode .card {
+      background-color: #fff;
+    }
+    body.alert-mode #countdown {
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎟️ TickTimer 搶票鬧鐘</h1>
+  
+  <div class="card">
+    <p style="margin-top:0; color:#666;">設定目標時間 (24小時制)，時間到將發送手機通知</p>
+    
+    <div class="time-input-group">
+      <input type="number" id="hh" min="0" max="23" placeholder="00" onblur="formatTime(this)">
+      <span>:</span>
+      <input type="number" id="mm" min="0" max="59" placeholder="00" onblur="formatTime(this)">
+      <span>:</span>
+      <input type="number" id="ss" min="0" max="59" placeholder="00" onblur="formatTime(this)">
+    </div>
+    
+    <button id="startBtn" onclick="startTimer()">授權通知並開始倒數</button>
+    <button id="stopBtn" class="stop-btn" onclick="stopTimer()">停止倒數</button>
+    
+    <div id="countdown">00:00.00</div>
+  </div>
+
+  <div class="instructions">
+    <strong>⚠️ iOS 使用前必看步驟：</strong>
+    <ol>
+      <li>點擊 Safari 底部的「分享」按鈕 (方形加上箭頭)。</li>
+      <li>選擇<strong>「加入主畫面」</strong>。</li>
+      <li>從手機主畫面打開這個 App (會有一個新的圖示)。</li>
+      <li>點擊開始時，系統會詢問是否允許發送通知，請務必點選<strong>「允許」</strong>。</li>
+    </ol>
+  </div>
+
+  <script>
+    // 格式化輸入框，確保輸入為兩位數且不超出範圍
+    function formatTime(input) {
+      let val = parseInt(input.value);
+      if (isNaN(val)) {
+        input.value = "00";
+        return;
+      }
+      let max = parseInt(input.getAttribute('max'));
+      if (val > max) val = max;
+      if (val < 0) val = 0;
+      input.value = String(val).padStart(2, '0');
+    }
+
+    // 頁面載入時，預設填入下一個整點時間
+    window.onload = function() {
+      const targetDate = new Date();
+      targetDate.setHours(targetDate.getHours() + 1); // 加上一小時
+      
+      document.getElementById('hh').value = String(targetDate.getHours()).padStart(2, '0');
+      document.getElementById('mm').value = '00';
+      document.getElementById('ss').value = '00';
+    };
+
+    let timerInterval;
+    let targetDate;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // 播放提示音 (使用 Web Audio API 繞過自動播放限制)
+    function playBeep(frequency = 880, duration = 0.2) {
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      const oscillator = audioCtx.createOscillator();
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+      oscillator.connect(audioCtx.destination);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    // 發送系統通知
+    function sendNotification(title, body) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, { body: body });
+      }
+    }
+
+    async function startTimer() {
+      const h = document.getElementById('hh').value;
+      const m = document.getElementById('mm').value;
+      const s = document.getElementById('ss').value;
+      
+      if (h === '' || m === '' || s === '') return alert("請完整輸入搶票時間！");
+      const timeInput = `${h}:${m}:${s}`;
+
+      // 1. 初始化音效 (必須在使用者點擊按鈕時觸發)
+      if(audioCtx.state === 'suspended') await audioCtx.resume();
+      
+      // 2. 請求系統通知權限
+      if ("Notification" in window) {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+          const permission = await Notification.requestPermission();
+          if (permission !== "granted") {
+            alert("您拒絕了通知權限，時間到時將只有聲音與畫面提示。");
+          } else {
+            sendNotification("✅ 設定成功", `將在 ${timeInput} 提醒您搶票！`);
+          }
+        }
+      } else {
+        alert("目前的瀏覽器狀態不支援系統通知 (請確認是否已「加入主畫面」)，將僅使用聲音提示。");
+      }
+
+      // 3. 設定目標時間
+      targetDate = new Date();
+      targetDate.setHours(parseInt(h), parseInt(m), parseInt(s), 0);
+
+      // 如果時間已經過了，設定為明天
+      if (targetDate.getTime() < new Date().getTime()) {
+        targetDate.setDate(targetDate.getDate() + 1);
+      }
+
+      // 4. 切換 UI
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'block';
+      document.getElementById('countdown').style.display = 'block';
+      document.getElementById('hh').disabled = true;
+      document.getElementById('mm').disabled = true;
+      document.getElementById('ss').disabled = true;
+      document.body.classList.remove('alert-mode');
+
+      let notified10s = false;
+
+      // 5. 開始倒數迴圈
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const diff = targetDate.getTime() - now;
+
+        if (diff <= 0) {
+          // 時間到！
+          clearInterval(timerInterval);
+          document.getElementById('countdown').innerText = "00:00.000";
+          document.body.classList.add('alert-mode');
+          playBeep(1200, 1.0); // 長聲高音
+          sendNotification("🔥 時間到！", "快點去搶票！！！");
+          return;
+        }
+
+        // 計算分、秒、毫秒
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        const ms = Math.floor((diff % 1000));
+
+        document.getElementById('countdown').innerText = 
+          `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+
+        // 倒數 10 秒時的特別提醒
+        if (diff <= 10000 && !notified10s) {
+          notified10s = true;
+          sendNotification("⚠️ 準備！", "距離搶票剩下最後 10 秒！");
+        }
+
+        // 最後 10 秒每一秒逼一聲
+        if (diff <= 10000 && ms < 50) {
+          document.body.classList.toggle('alert-mode'); // 畫面閃爍
+          playBeep(880, 0.1);
+        }
+
+      }, 40); // 每 40 毫秒更新一次以呈現順暢的毫秒跳動
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      document.getElementById('startBtn').style.display = 'block';
+      document.getElementById('stopBtn').style.display = 'none';
+      document.getElementById('countdown').style.display = 'none';
+      document.getElementById('hh').disabled = false;
+      document.getElementById('mm').disabled = false;
+      document.getElementById('ss').disabled = false;
+      document.body.classList.remove('alert-mode');
+    }
+  </script>
+</body>
+</html>
