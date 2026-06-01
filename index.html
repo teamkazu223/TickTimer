@@ -2,463 +2,355 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <!-- 必須要有這幾行，確保加入主畫面後會像原生 App 一樣全螢幕運作 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>TickTimer 搶票鬧鐘</title>
+  <title>TickTimer 懸浮視窗產生器</title>
   <style>
-    /* 極簡化、極輕量 CSS */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #111;
       color: #eee;
       text-align: center;
-      padding: 20px;
+      padding: 15px;
       margin: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
       -webkit-user-select: none;
-      user-select: none; /* 防止誤觸選取文字 */
+      user-select: none;
     }
     h1 {
-      font-size: 28px;
-      margin: 10px 0 5px 0;
+      font-size: 24px;
+      margin: 5px 0;
       color: #fff;
     }
     .subtitle {
       color: #888;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-    .card {
-      background: #222;
-      padding: 20px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 320px;
-      box-sizing: border-box;
+      font-size: 13px;
+      margin-bottom: 15px;
     }
     
-    /* 24 小時制輸入框 - 加大按鈕與防呆 */
-    .time-input-group {
+    .url-box {
+      width: 100%;
+      max-width: 350px;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .url-box input {
+      flex: 1;
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .url-box button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .iframe-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 350px;
+      background: #1a1a1a;
+      padding: 15px 10px;
+      border-radius: 12px;
+      box-sizing: border-box;
+    }
+    .control-row {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 15px 0 25px 0;
+      gap: 6px;
+      width: 100%;
     }
-    .time-spinner {
+    .control-row span {
+      font-size: 12px;
+      color: #aaa;
+      width: 60px;
+      text-align: right;
+    }
+    .iframe-controls button {
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      touch-action: manipulation;
+      flex: 1;
+    }
+    .iframe-controls button:active {
+      background: #555;
+    }
+
+    .preview-label {
+      font-size: 12px;
+      color: #4ade80;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .iframe-container {
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+      margin-bottom: 25px;
+      background: #fff;
+      overflow: hidden;
+      border: 3px solid #3b82f6;
       display: flex;
       flex-direction: column;
+    }
+    .drag-handle {
+      width: 100%;
+      height: 24px;
+      background: #3b82f6;
+      color: #fff;
+      display: flex;
       align-items: center;
-    }
-    .spin-btn {
-      background: #333;
-      color: #aaa;
-      border: none;
-      border-radius: 8px;
-      font-size: 24px;
-      width: 60px;
-      height: 44px; /* 加大觸控面積 */
-      cursor: pointer;
-      touch-action: manipulation; /* 防止狂按時螢幕放大 */
-      -webkit-tap-highlight-color: transparent;
-    }
-    .spin-btn:active {
-      background: #555;
-      color: #fff;
-    }
-    .time-spinner input {
-      width: 60px;
-      font-size: 40px;
-      text-align: center;
-      border: none;
-      background: transparent;
-      color: #fff;
+      justify-content: center;
+      font-size: 12px;
       font-weight: bold;
-      margin: 10px 0;
-      padding: 0;
-      -moz-appearance: textfield;
-      -webkit-user-select: auto;
-      user-select: auto; /* 只有輸入框允許選取打字 */
+      cursor: move;
     }
-    .time-spinner input:focus {
-      outline: none;
-      color: #3b82f6;
-    }
-    .time-spinner input::-webkit-outer-spin-button,
-    .time-spinner input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    .time-separator {
-      font-size: 40px;
-      font-weight: bold;
-      margin: 0 5px;
-      color: #555;
-    }
-
-    button.action-btn {
-      background: #0066cc;
-      color: white;
-      border: none;
-      padding: 16px;
-      font-size: 18px;
-      font-weight: bold;
-      border-radius: 12px;
-      cursor: pointer;
-      width: 100%;
-      margin-bottom: 10px;
-      touch-action: manipulation;
-    }
-    button.action-btn:active {
-      background: #005bb5;
-    }
-    button.stop-btn {
-      background: #cc0000;
-      display: none;
-    }
-    button.stop-btn:active {
-      background: #a30000;
-    }
-    button.pip-btn {
-      background: #008844;
-      display: none;
-    }
-    button.pip-btn:active {
-      background: #006633;
-    }
-
-    #countdown {
-      font-size: 56px;
-      font-weight: bold;
-      font-variant-numeric: tabular-nums;
-      margin: 15px 0;
-      color: #3b82f6;
-      display: none;
-    }
-    .instructions {
-      font-size: 13px;
-      color: #777;
-      text-align: left;
-      margin-top: 20px;
-      background: #1a1a1a;
-      padding: 15px;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 320px;
-      box-sizing: border-box;
-    }
-    .instructions ol {
-      margin-top: 8px;
-      padding-left: 20px;
+    .iframe-wrapper {
+      background: #fff;
+      overflow: hidden;
+      position: relative;
+      transition: width 0.2s, height 0.2s;
     }
     
-    /* 警告狀態 */
-    body.alert-mode {
-      background-color: #330000;
+    /* 
+      終極解法：在 iframe 上面蓋一塊絕對定位的透明玻璃。
+      這樣所有的點擊都會被這塊玻璃擋住，絕對點不到裡面的 iframe！
+    */
+    .iframe-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10; 
+      /* 確保玻璃在最上層，且會攔截所有點擊 */
     }
-    body.alert-mode .card {
-      background-color: #440000;
+
+    /* 針對 iframe 增加額外的沙盒限制 */
+    iframe {
+      width: 800px;
+      height: 1000px;
+      border: none;
+      transform-origin: top left;
+      transition: margin 0.2s ease-out, transform 0.2s ease-out;
     }
-    body.alert-mode #countdown {
-      color: #ff3333;
+
+    .export-box {
+      width: 100%;
+      max-width: 350px;
+      background: #222;
+      padding: 20px;
+      border-radius: 16px;
+      box-sizing: border-box;
+    }
+    .export-box h3 {
+      margin-top: 0;
+      color: #3b82f6;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .export-box p {
+      font-size: 12px;
+      color: #aaa;
+      text-align: left;
+      line-height: 1.5;
+      margin-bottom: 15px;
+    }
+    .export-box textarea {
+      width: 100%;
+      height: 70px;
+      background: #111;
+      color: #4ade80;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 11px;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+      resize: none;
+    }
+    .export-box button {
+      background: #4ade80;
+      color: #000;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      touch-action: manipulation;
+    }
+    .export-box button:active {
+      background: #22c55e;
     }
   </style>
 </head>
 <body>
 
   <h1>TickTimer</h1>
-  <div class="subtitle">極速搶票專用鬧鐘</div>
-  
-  <div class="card">
-    <p style="margin-top:0; color:#888; font-size: 14px;">設定目標時間 (24小時制)</p>
-    
-    <div class="time-input-group">
-      <!-- 時 -->
-      <div class="time-spinner">
-        <button type="button" class="spin-btn" onclick="adjustTime('hh', 1)">＋</button>
-        <input type="number" id="hh" min="0" max="23" placeholder="00" onblur="formatTime(this)">
-        <button type="button" class="spin-btn" onclick="adjustTime('hh', -1)">－</button>
-      </div>
-      
-      <div class="time-separator">:</div>
-      
-      <!-- 分 -->
-      <div class="time-spinner">
-        <button type="button" class="spin-btn" onclick="adjustTime('mm', 1)">＋</button>
-        <input type="number" id="mm" min="0" max="59" placeholder="00" onblur="formatTime(this)">
-        <button type="button" class="spin-btn" onclick="adjustTime('mm', -1)">－</button>
-      </div>
-      
-      <div class="time-separator">:</div>
-      
-      <!-- 秒 -->
-      <div class="time-spinner">
-        <button type="button" class="spin-btn" onclick="adjustTime('ss', 1)">＋</button>
-        <input type="number" id="ss" min="0" max="59" placeholder="00" onblur="formatTime(this)">
-        <button type="button" class="spin-btn" onclick="adjustTime('ss', -1)">－</button>
-      </div>
-    </div>
-    
-    <button id="startBtn" class="action-btn" onclick="startTimer()">授權通知並開始倒數</button>
-    <button id="stopBtn" class="action-btn stop-btn" onclick="stopTimer()">停止倒數</button>
-    <button id="pipBtn" class="action-btn pip-btn" onclick="startPiP()">📱 開啟懸浮時鐘 (PiP)</button>
-    
-    <div id="countdown">00:00.00</div>
+  <div class="subtitle">Navyism 懸浮視窗產生器</div>
 
-    <!-- 隱藏的畫布與影片元素，用來產生子母畫面串流 -->
-    <canvas id="pipCanvas" width="400" height="150" style="display: none;"></canvas>
-    <video id="pipVideo" playsinline muted autoplay style="display: none;"></video>
+  <div class="url-box">
+    <input type="url" id="targetUrl" value="https://kktix.com" placeholder="輸入售票網址 (僅預覽用)">
+    <button onclick="loadNavyism()">預覽時鐘</button>
+  </div>
+  
+  <div class="iframe-controls">
+    <div class="control-row">
+      <span>視窗大小:</span>
+      <button onclick="adjustWrapperW(-20)">寬度 -</button>
+      <button onclick="adjustWrapperW(20)">寬度 +</button>
+      <button onclick="adjustWrapperH(-10)">高度 -</button>
+      <button onclick="adjustWrapperH(10)">高度 +</button>
+    </div>
+    <div class="control-row">
+      <span>縮放時鐘:</span>
+      <button onclick="adjustScale(-0.05)">- 縮小</button>
+      <button onclick="adjustScale(0.05)">+ 放大</button>
+    </div>
+    <div class="control-row">
+      <span>時鐘位置:</span>
+      <button onclick="adjustIframeX(-20)">←</button>
+      <button onclick="adjustIframeX(20)">→</button>
+      <button onclick="adjustIframeY(-30)">↑</button>
+      <button onclick="adjustIframeY(30)">↓</button>
+    </div>
   </div>
 
-  <div class="instructions">
-    <strong style="color: var(--text-main);">⚠️ iOS 使用必看步驟：</strong>
-    <ol>
-      <li>點擊 Safari 底部的「分享」按鈕。</li>
-      <li>選擇<strong>「加入主畫面」</strong>。</li>
-      <li>從主畫面打開這個 App。</li>
-      <li>點擊開始時，系統若詢問是否允許發送通知，請務必點選<strong>「允許」</strong>。</li>
-    </ol>
+  <div class="preview-label">👇 您在搶票網頁上看到的真實大小 👇</div>
+  <div class="iframe-container" id="previewContainer">
+    <div class="drag-handle">✥ 拖曳此處 ✥</div>
+    <div class="iframe-wrapper" id="previewWrapper">
+      <!-- 加入 sandbox 屬性，徹底封殺 iframe 內的 JavaScript 自動導頁 (Top Navigation) 行為 -->
+      <iframe id="navyismFrame" src="https://time.navyism.com/?host=https://kktix.com" scrolling="no" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+  </div>
+
+  <div class="export-box">
+    <h3>🚀 匯出成書籤小工具</h3>
+    <p>調整好上方畫面後，點擊複製下方代碼。將此代碼儲存為 Safari 書籤。<br><br>💡 <b>使用方式：</b>在搶票網頁 (如 KKTIX) 點擊該書籤，時鐘就會直接懸浮在右下角，且點擊可穿透不擋畫面！(再點一次書籤可關閉)</p>
+    <textarea id="bookmarkletCode" readonly></textarea>
+    <button onclick="copyCode()">📋 複製程式碼</button>
   </div>
 
   <script>
-    // 透過上下按鈕調整時間 (支援循環)
-    function adjustTime(id, delta) {
-      const input = document.getElementById(id);
-      let val = parseInt(input.value);
-      if (isNaN(val)) val = 0;
-      
-      const max = parseInt(input.getAttribute('max'));
-      val += delta;
-      
-      // 當數值小於 0 時跳到最大值，大於最大值時回到 0
-      if (val < 0) val = max;
-      if (val > max) val = 0;
-      
-      input.value = String(val).padStart(2, '0');
-    }
+    // 控制外框大小的變數 (預設加寬至 280)
+    let wrapperWidth = 280;
+    let wrapperHeight = 70;
 
-    // 格式化輸入框，確保輸入為兩位數且不超出範圍
-    function formatTime(input) {
-      let val = parseInt(input.value);
-      if (isNaN(val)) {
-        input.value = "00";
-        return;
-      }
-      let max = parseInt(input.getAttribute('max'));
-      if (val > max) val = max;
-      if (val < 0) val = 0;
-      input.value = String(val).padStart(2, '0');
-    }
+    // 控制 iframe 狀態的變數
+    let iframeOffset = -220; // Y軸 (上下)
+    let iframeOffsetX = -40; // X軸 (左右)
+    let iframeScale = 0.70;  // 縮放比例
 
-    // 頁面載入時，預設填入下一個整點時間
     window.onload = function() {
-      const targetDate = new Date();
-      targetDate.setHours(targetDate.getHours() + 1); // 加上一小時
-      
-      document.getElementById('hh').value = String(targetDate.getHours()).padStart(2, '0');
-      document.getElementById('mm').value = '00';
-      document.getElementById('ss').value = '00';
+      updateIframeStyle();
     };
 
-    let timerInterval;
-    let targetDate;
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // 子母畫面 (PiP) 相關變數
-    const canvas = document.getElementById('pipCanvas');
-    const ctx = canvas.getContext('2d');
-    const video = document.getElementById('pipVideo');
-    let stream;
+    // 統一更新樣式，並即時產生新的書籤程式碼
+    function updateIframeStyle() {
+      // 1. 更新外框 (Wrapper) 大小
+      const wrapper = document.getElementById('previewWrapper');
+      wrapper.style.width = wrapperWidth + 'px';
+      wrapper.style.height = wrapperHeight + 'px';
 
-    // 將時間畫到隱藏的 Canvas 上
-    function updateCanvas(timeText, isAlert = false) {
-      // 填滿背景色 (平常是深藍，警告時是暗紅)
-      ctx.fillStyle = isAlert ? '#2a0808' : '#0f172a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // 警告時畫紅色邊框
-      if (isAlert) {
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-      }
-
-      // 繪製文字
-      ctx.fillStyle = isAlert ? '#ef4444' : '#3b82f6'; // 文字顏色
-      ctx.font = 'bold 70px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(timeText, canvas.width / 2, canvas.height / 2);
+      // 2. 更新內部時鐘偏移與縮放
+      const iframe = document.getElementById('navyismFrame');
+      iframe.style.marginTop = iframeOffset + 'px';
+      iframe.style.marginLeft = iframeOffsetX + 'px';
+      iframe.style.transform = `scale(${iframeScale})`;
+      
+      updateBookmarklet();
     }
 
-    // 啟動子母畫面 (PiP)
-    async function startPiP() {
+    // 更新產生的書籤程式碼
+    function updateBookmarklet() {
+      // 直接讀取你在上方輸入框打的網址，強制燒錄進代碼裡，不再抓取 window.location.origin
+      const targetUrl = document.getElementById('targetUrl').value || 'https://kktix.com';
+      const encodedHost = encodeURIComponent(targetUrl);
+
+      // ★ 這次在產生的書籤中，強制加入了 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin'); 徹底封殺跳轉 ★
+      const jsCode = `javascript:(function(){var id='nv-floater';var old=document.getElementById(id);if(old){old.remove();return;}var div=document.createElement('div');div.id=id;div.style.cssText='position:fixed;bottom:80px;right:20px;width:${wrapperWidth}px;z-index:2147483647;pointer-events:none;display:flex;flex-direction:column;box-shadow:0 5px 20px rgba(0,0,0,0.5);border-radius:12px;border:3px solid #3b82f6;overflow:hidden;background:#fff;';var handle=document.createElement('div');handle.innerHTML='&#10022; 拖曳此處';handle.style.cssText='width:100%;height:24px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:move;pointer-events:auto;user-select:none;font-weight:bold;font-family:sans-serif;';var content=document.createElement('div');content.style.cssText='width:${wrapperWidth}px;height:${wrapperHeight}px;background:#fff;overflow:hidden;pointer-events:none;box-sizing:border-box;';var iframe=document.createElement('iframe');iframe.src='https://time.navyism.com/?host=${encodedHost}';iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');iframe.style.cssText='width:800px;height:1000px;border:none;margin-top:${iframeOffset}px;margin-left:${iframeOffsetX}px;transform:scale(${iframeScale});transform-origin:top left;pointer-events:none;';content.appendChild(iframe);div.appendChild(handle);div.appendChild(content);document.body.appendChild(div);var isDown=false,startX,startY,startL,startT;function down(e){isDown=true;var c=e.touches?e.touches[0]:e;startX=c.clientX;startY=c.clientY;startL=div.offsetLeft;startT=div.offsetTop;if(e.cancelable)e.preventDefault();}function move(e){if(!isDown)return;var c=e.touches?e.touches[0]:e;div.style.right='auto';div.style.bottom='auto';div.style.left=(startL+c.clientX-startX)+'px';div.style.top=(startT+c.clientY-startY)+'px';if(e.cancelable)e.preventDefault();}function up(){isDown=false;}handle.addEventListener('mousedown',down);document.addEventListener('mousemove',move,{passive:false});document.addEventListener('mouseup',up);handle.addEventListener('touchstart',down,{passive:false});document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);})();`;
+      
+      document.getElementById('bookmarkletCode').value = jsCode;
+    }
+
+    // 外框寬高調整
+    function adjustWrapperW(delta) {
+      wrapperWidth += delta;
+      if (wrapperWidth < 100) wrapperWidth = 100;
+      updateIframeStyle();
+    }
+    function adjustWrapperH(delta) {
+      wrapperHeight += delta;
+      if (wrapperHeight < 40) wrapperHeight = 40;
+      updateIframeStyle();
+    }
+
+    // 畫面微調功能 (上下)
+    function adjustIframeY(delta) {
+      iframeOffset += delta;
+      updateIframeStyle();
+    }
+
+    // 畫面微調功能 (左右)
+    function adjustIframeX(delta) {
+      iframeOffsetX += delta;
+      updateIframeStyle();
+    }
+
+    // 畫面縮放功能
+    function adjustScale(delta) {
+      iframeScale += delta;
+      if (iframeScale < 0.3) iframeScale = 0.3; 
+      if (iframeScale > 1.5) iframeScale = 1.5; 
+      updateIframeStyle();
+    }
+
+    // 載入 Navyism 預覽
+    function loadNavyism() {
+      const url = document.getElementById('targetUrl').value;
+      if(url) {
+        document.getElementById('navyismFrame').src = `https://time.navyism.com/?host=${encodeURIComponent(url)}`;
+        updateBookmarklet(); // 確保輸入新網址時，下方產生的代碼也同步更新
+      }
+    }
+
+    // 複製程式碼功能
+    function copyCode() {
+      const textArea = document.getElementById('bookmarkletCode');
+      textArea.select();
+      textArea.setSelectionRange(0, 99999); // 確保手機端能完整選取
       try {
-        if (!stream) {
-          // 將 Canvas 轉換為 30fps 的影片串流
-          stream = canvas.captureStream(30);
-          video.srcObject = stream;
-          
-          // 確保影片元數據載入完成後再播放 (解決 iOS 尚未準備好就彈出的錯誤)
-          await new Promise(resolve => {
-            video.onloadedmetadata = () => resolve();
-            if (video.readyState >= 1) resolve(); // 若已經就緒則直接通過
-          });
-          await video.play();
-        }
-        
-        // 優先嘗試 iOS Safari 專屬的 WebKit API
-        if (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === "function") {
-          if (video.webkitPresentationMode === "picture-in-picture") {
-            video.webkitSetPresentationMode("inline");
-          } else {
-            video.webkitSetPresentationMode("picture-in-picture");
-          }
-        } 
-        // 接著嘗試標準 Web API (Chrome, PC 版 Safari, Android 等)
-        else if (document.pictureInPictureEnabled || video.requestPictureInPicture) {
-          if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-          } else {
-            await video.requestPictureInPicture();
-          }
-        } else {
-          alert("您的系統或瀏覽器目前不支援子母畫面功能！");
-        }
-      } catch (error) {
-        alert("系統阻擋了懸浮視窗！\n原因: " + error.message + "\n\n(註: 部分 iOS 版本對於「非真實影片」的懸浮有嚴格安全限制)");
+        document.execCommand('copy');
+        alert("✅ 程式碼已成功複製！\n\n請前往 Safari 把這段代碼取代為某個書籤的「網址」，搶票時點擊該書籤即可喚出懸浮窗。");
+      } catch (err) {
+        alert("複製失敗，請手動全選框內的文字並複製。");
       }
-    }
-
-    // 播放提示音 (使用 Web Audio API 繞過自動播放限制)
-    function playBeep(frequency = 880, duration = 0.2) {
-      if(audioCtx.state === 'suspended') audioCtx.resume();
-      const oscillator = audioCtx.createOscillator();
-      oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-      oscillator.connect(audioCtx.destination);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + duration);
-    }
-
-    // 發送系統通知
-    function sendNotification(title, body) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(title, { body: body });
-      }
-    }
-
-    async function startTimer() {
-      const h = document.getElementById('hh').value;
-      const m = document.getElementById('mm').value;
-      const s = document.getElementById('ss').value;
-      
-      if (h === '' || m === '' || s === '') return alert("請完整輸入搶票時間！");
-      const timeInput = `${h}:${m}:${s}`;
-
-      // 1. 初始化音效 (必須在使用者點擊按鈕時觸發)
-      if(audioCtx.state === 'suspended') await audioCtx.resume();
-      
-      // 2. 請求系統通知權限
-      if ("Notification" in window) {
-        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-          const permission = await Notification.requestPermission();
-          if (permission !== "granted") {
-            alert("您拒絕了通知權限，時間到時將只有聲音與畫面提示。");
-          } else {
-            sendNotification("✅ 設定成功", `將在 ${timeInput} 提醒您搶票！`);
-          }
-        }
-      } else {
-        alert("目前的瀏覽器狀態不支援系統通知 (請確認是否已「加入主畫面」)，將僅使用聲音提示。");
-      }
-
-      // 3. 設定目標時間
-      targetDate = new Date();
-      targetDate.setHours(parseInt(h), parseInt(m), parseInt(s), 0);
-
-      // 如果時間已經過了，設定為明天
-      if (targetDate.getTime() < new Date().getTime()) {
-        targetDate.setDate(targetDate.getDate() + 1);
-      }
-
-      // 4. 切換 UI
-      document.getElementById('startBtn').style.display = 'none';
-      document.getElementById('stopBtn').style.display = 'block';
-      document.getElementById('pipBtn').style.display = 'block';
-      document.getElementById('countdown').style.display = 'block';
-      document.getElementById('hh').disabled = true;
-      document.getElementById('mm').disabled = true;
-      document.getElementById('ss').disabled = true;
-      document.querySelectorAll('.spin-btn').forEach(btn => btn.disabled = true);
-      document.body.classList.remove('alert-mode');
-      
-      // 初始畫布文字
-      updateCanvas("等待中...");
-
-      let notified10s = false;
-
-      // 5. 開始倒數迴圈
-      clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        const now = new Date().getTime();
-        const diff = targetDate.getTime() - now;
-
-        if (diff <= 0) {
-          // 時間到！
-          clearInterval(timerInterval);
-          document.getElementById('countdown').innerText = "00:00.000";
-          updateCanvas("00:00.000", true); // 更新畫布
-          document.body.classList.add('alert-mode');
-          playBeep(1200, 1.0); // 長聲高音
-          sendNotification("🔥 時間到！", "快點去搶票！！！");
-          return;
-        }
-
-        // 計算分、秒、毫秒
-        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const s = Math.floor((diff % (1000 * 60)) / 1000);
-        const ms = Math.floor((diff % 1000));
-
-        const timeString = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
-        document.getElementById('countdown').innerText = timeString;
-        
-        // 是否為警告閃爍狀態 (最後 10 秒且毫秒小於 50 時)
-        const isAlertBlink = (diff <= 10000 && ms < 50);
-        
-        // 更新畫布，讓子母畫面同步顯示
-        updateCanvas(timeString, document.body.classList.contains('alert-mode') || isAlertBlink);
-
-        // 倒數 10 秒時的特別提醒
-        if (diff <= 10000 && !notified10s) {
-          notified10s = true;
-          sendNotification("⚠️ 準備！", "距離搶票剩下最後 10 秒！");
-        }
-
-        // 最後 10 秒每一秒逼一聲
-        if (diff <= 10000 && ms < 50) {
-          document.body.classList.toggle('alert-mode'); // 畫面閃爍
-          playBeep(880, 0.1);
-        }
-
-      }, 40); // 每 40 毫秒更新一次以呈現順暢的毫秒跳動
-    }
-
-    function stopTimer() {
-      clearInterval(timerInterval);
-      document.getElementById('startBtn').style.display = 'block';
-      document.getElementById('stopBtn').style.display = 'none';
-      document.getElementById('pipBtn').style.display = 'none';
-      document.getElementById('countdown').style.display = 'none';
-      document.getElementById('hh').disabled = false;
-      document.getElementById('mm').disabled = false;
-      document.getElementById('ss').disabled = false;
-      document.querySelectorAll('.spin-btn').forEach(btn => btn.disabled = false);
-      document.body.classList.remove('alert-mode');
     }
   </script>
 </body>
